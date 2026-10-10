@@ -1,3 +1,10 @@
+> [!IMPORTANT]
+> **This is an unofficial fork that also runs on macOS 13 Ventura and on Intel Macs.**
+> It is not made, endorsed or supported by the Vorssaint project. The original, with
+> official signed builds for macOS 14 and newer, lives at
+> [vorssaint/vorssaint-utils](https://github.com/vorssaint/vorssaint-utils). Please do not
+> report problems with this fork there. See [what differs on macOS 13](#what-differs-in-this-fork).
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/logo-dark.svg">
@@ -208,17 +215,43 @@ See the [permissions guide](docs/PERMISSIONS.md) for which features need access 
 
 ## What you need
 
-- A Mac with Apple Silicon
-- macOS 14 Sonoma or newer
+- A Mac with Apple Silicon or Intel
+- macOS 13 Ventura or newer
+
+### What differs in this fork
+
+The code is the original's, with every call that needs macOS 14 given a macOS 13
+stand-in. Nothing changes on macOS 14 and newer. On macOS 13:
+
+- **Per app volume and the live music bars are unavailable.** They rest on audio
+  taps that macOS only gained in 14.4, as in the original.
+- Screenshots and window previews are taken from a one-frame capture stream instead
+  of the macOS 14 screenshot call.
+- Symbol animations, the island's blur swap and a few other flourishes fall back to
+  plain fades or are skipped.
+- The space and arrow keys do nothing in two small controls (the uninstaller's
+  checkboxes and the keep-awake time wheel); click or scroll them instead.
+- The app looks for updates in this fork's releases, never the original's, whose
+  builds would not open on macOS 13.
+
+This fork has been built and its test suite run on a newer macOS. **It has not been
+run on a real macOS 13 or Intel Mac yet**, so expect rough edges there, above all in
+the hardware readings (temperatures, fans), which were written for Apple Silicon.
+
+There are no downloads here: build it yourself with the steps below. The build is
+signed ad hoc, so on another Mac open it the first time with a right-click and Open.
 
 ### Build it yourself
 
 ```sh
-git clone https://github.com/vorssaint/vorssaint-utils.git
-cd vorssaint-utils
+git clone https://github.com/Just-Rice/vorssaint-utils-macos13.git
+cd vorssaint-utils-macos13
+./build.sh                  # build/stage/Vorssaint.app, for Apple Silicon and Intel
 ./build.sh --dev            # build the separate Developer variant
 ./build.sh --dev --install  # install and launch it
 ```
+
+`VORSSAINT_ARCHS="arm64" ./build.sh` (or `"x86_64"`) builds for one processor only, in half the time.
 
 Xcode Command Line Tools are the only requirement. The [contributing guide](CONTRIBUTING.md) covers the layout and conventions. Official builds come only from the maintainer: the GPL covers the source, while the Vorssaint name, icon and look are covered by [TRADEMARKS.md](TRADEMARKS.md), so forks need their own identity.
 

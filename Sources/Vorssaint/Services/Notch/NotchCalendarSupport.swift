@@ -102,7 +102,7 @@ enum NotchCalendarSupport {
     }
 
     static func requestFailed(status: EKAuthorizationStatus, hasError: Bool) -> Bool {
-        hasError || ![.fullAccess, .denied, .restricted].contains(status)
+        hasError || ![.fullAccessCompat, .denied, .restricted].contains(status)
     }
 
     static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
@@ -340,5 +340,19 @@ enum NotchCalendarSupport {
             ?? now.addingTimeInterval(900)
         return (upcoming(events, now: now).flatMap { [$0.start, $0.end] } + [midnight, now.addingTimeInterval(900)])
             .filter { $0 > now }.min() ?? now.addingTimeInterval(900)
+    }
+}
+
+extension EKAuthorizationStatus {
+    /// Full access, which macOS 13 reports as the older `authorized`.
+    static var fullAccessCompat: EKAuthorizationStatus {
+        if #available(macOS 14.0, *) { return .fullAccess }
+        return .authorized
+    }
+
+    /// Write-only access does not exist before macOS 14; nothing matches it there.
+    static var writeOnlyCompat: EKAuthorizationStatus? {
+        if #available(macOS 14.0, *) { return .writeOnly }
+        return nil
     }
 }

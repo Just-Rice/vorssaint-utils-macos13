@@ -287,8 +287,14 @@ final class CameraPreviewService: ObservableObject {
     }
 
     private func refreshDevices() {
+        let deviceTypes: [AVCaptureDevice.DeviceType]
+        if #available(macOS 14.0, *) {
+            deviceTypes = [.builtInWideAngleCamera, .external, .continuityCamera]
+        } else {
+            deviceTypes = [.builtInWideAngleCamera, .externalUnknown]
+        }
         let discovery = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.builtInWideAngleCamera, .external, .continuityCamera],
+            deviceTypes: deviceTypes,
             mediaType: .video,
             position: .unspecified
         )

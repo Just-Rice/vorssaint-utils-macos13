@@ -49,6 +49,9 @@ enum ScreenshotAttachedCaptureTests {
         }
     }
 
+    /// The compositor reaches the capture call through this name.
+    typealias ScreenCaptureCompat = SCScreenshotManager
+
     private static let bounds = CGRect(x: 1200, y: 100, width: 80, height: 60)
     private static let frames: [CGWindowID: CGRect] = [
         1: bounds,
@@ -104,6 +107,7 @@ enum ScreenshotAttachedCaptureTests {
         suite.expect(SCScreenshotManager.requests.map(\.id) == [1, 2, 3] && SCShareableContent.calls == 1,
                      "clipped, differently scaled and missing buffers share one content snapshot and are recaptured")
         suite.expect(SCScreenshotManager.requests.allSatisfy { request in
+            guard #available(macOS 14.0, *) else { return false }
             let configuration = request.configuration
             let frame = frames[request.id]!
             return configuration.width == Int(frame.width * 2)

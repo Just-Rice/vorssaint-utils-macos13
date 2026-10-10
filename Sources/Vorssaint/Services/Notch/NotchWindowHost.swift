@@ -984,18 +984,6 @@ private final class NotchQuickAccessContainer: NSView {
     }
 }
 
-/// CADisplayLink retains its target; the weak forwarding object lets an ordered
-/// out or destroyed canvas release its scheduler even mid-animation.
-private final class NotchBackdropTick: NSObject {
-    weak var canvas: NotchCanvas?
-    init(canvas: NotchCanvas) { self.canvas = canvas }
-    /// SwiftUI's drawing of what is set now reaches the screen the frame after
-    /// the one being prepared, so the material aims one frame further.
-    @objc func fire(_ sender: CADisplayLink) {
-        canvas?.advanceBackdrop(to: sender.targetTimestamp + (sender.targetTimestamp - sender.timestamp))
-    }
-}
-
 private final class NotchCanvas: NSView {
     private let host: NotchHostingView
     private let backdrop: NotchHostingView
@@ -1005,8 +993,7 @@ private final class NotchCanvas: NSView {
     /// the material stayed a frame at its old place when the window grew to
     /// open, cutting the island in half.
     private var stage = CGSize.zero
-    private(set) var backdropDisplayLink: CADisplayLink?
-    private lazy var backdropTick = NotchBackdropTick(canvas: self)
+    private(set) var backdropDisplayLink: FrameLink?
     private(set) var backdropTicks = 0
     private let activationButton = NotchActivationButton()
     private var activationRect = CGRect.zero
@@ -1345,9 +1332,12 @@ private final class NotchCanvas: NSView {
         if let from { setBackdropContour(inCanvas(from)) }
         // Only the material follows the display link; content layout and the
         // native window remain fixed for the duration of the animation.
-        let link = displayLink(target: backdropTick, selector: #selector(NotchBackdropTick.fire(_:)))
-        backdropDisplayLink = link
-        link.add(to: .main, forMode: .common)
+        // SwiftUI's drawing of what is set now reaches the screen the frame after
+        // the one being prepared, so the material aims one frame further.
+        backdropDisplayLink?.invalidate()
+        backdropDisplayLink = FrameLink(source: .view(self)) { [weak self] link in
+            self?.advanceBackdrop(to: link.targetTimestamp + (link.targetTimestamp - link.timestamp))
+        }
         if let borderAnimation = animation.copy() as? CAAnimation {
             borderAnimation.delegate = nil
             edge.add(borderAnimation, forKey: Self.motionKey)

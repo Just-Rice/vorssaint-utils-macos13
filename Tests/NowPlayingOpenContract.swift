@@ -27,7 +27,7 @@ enum NowPlayingOpenContract {
             self.activationPolicy = activationPolicy
         }
         func unhide() { events.append("unhide:\(processIdentifier)") }
-        @discardableResult func activate(from source: App, options: NSApplication.ActivationOptions) -> Bool {
+        @discardableResult func activateCompat(from source: App, options: NSApplication.ActivationOptions) -> Bool {
             events.append("activate:\(processIdentifier):\(source.processIdentifier):\(options.contains(.activateAllWindows))")
             return cooperativeActivation
         }

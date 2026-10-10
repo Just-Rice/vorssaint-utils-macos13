@@ -43,8 +43,8 @@ struct NotchIslandPreview: View {
             .accessibilityLabel(editor.preview)
             .accessibilityValue(module.title(l10n.language) + (hidden ? ", " + editor.hiddenInIsland : ""))
             .onAppear { monitor(windowVisible && module == .system) }
-            .onChange(of: module) { _, value in monitor(windowVisible && value == .system) }
-            .onChange(of: windowVisible) { _, visible in monitor(visible && module == .system) }
+            .onChangeCompat(of: module) { _, value in monitor(windowVisible && value == .system) }
+            .onChangeCompat(of: windowVisible) { _, visible in monitor(visible && module == .system) }
             .onDisappear { monitor(false) }
     }
 

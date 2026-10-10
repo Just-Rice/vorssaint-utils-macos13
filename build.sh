@@ -62,7 +62,13 @@ FAN_HELPER_ID="$APP_BUNDLE_ID.fan-control"
 # Sources/NowPlayingAdapter. Staged under Contents/Frameworks, signed on its own.
 NOW_PLAYING_ADAPTER_ID="$APP_BUNDLE_ID.now-playing"
 NOW_PLAYING_ADAPTER="libVorssaintNowPlaying.dylib"
-TARGET="arm64-apple-macosx14.0"
+# The oldest macOS the build runs on, and the processors it is built for. Macs
+# that stop at macOS 13 are mostly Intel, so the default covers both; set
+# VORSSAINT_ARCHS="arm64" (or "x86_64") to build one alone, twice as fast.
+MIN_MACOS="13.0"
+ARCHS=(${=VORSSAINT_ARCHS:-arm64 x86_64})
+# The tests run where they are built.
+TARGET="$(uname -m)-apple-macosx$MIN_MACOS"
 ENTITLEMENTS="Resources/Vorssaint.entitlements"
 LEGACY_IDENTITY="Vorssaint Utils Signing"
 
@@ -547,6 +553,8 @@ if (( TEST )); then
         Sources/Vorssaint/Services/Uninstall/UninstallerSupport.swift
         Sources/Vorssaint/Services/ManagedDownloads/WhatsAppDownloadSupport.swift
         Sources/Vorssaint/Core/SecureInputSupport.swift
+        Sources/Vorssaint/Support/MacOS13Compat.swift
+        Sources/Vorssaint/Support/FrameLink.swift
         Tests/*.swift
         build/generated-tests/*.swift
     )
@@ -577,8 +585,15 @@ if (( ! DEV )); then
     # changed since, and a fresh checkout has none.
     find build -mindepth 1 -maxdepth 1 ! -name objects -exec rm -rf {} + 2>/dev/null || true
 fi
-APP_OBJECT_DIR="build/objects/$EXECUTABLE"
-mkdir -p build "$APP_OBJECT_DIR"
+mkdir -p build
+APP_SLICES=()
+HELPER_SLICES=()
+ADAPTER_SLICES=()
+for arch in "${ARCHS[@]}"; do
+TARGET="$arch-apple-macosx$MIN_MACOS"
+echo "  · $arch"
+APP_OBJECT_DIR="build/objects/$EXECUTABLE-$arch"
+mkdir -p "$APP_OBJECT_DIR"
 APP_OUTPUT_FILE_MAP="$APP_OBJECT_DIR/output-file-map.json"
 write_swift_output_file_map "$APP_OUTPUT_FILE_MAP" "$APP_OBJECT_DIR" "${APP_SOURCES[@]}"
 # Without -j the driver compiles one file at a time, and without batch mode
@@ -586,12 +601,12 @@ write_swift_output_file_map "$APP_OUTPUT_FILE_MAP" "$APP_OBJECT_DIR" "${APP_SOUR
 # quarter of an hour. Batches share that work and run on every core, and the
 # optimization stays per file, as before.
 swiftc "${APP_OPTIMIZATION_FLAGS[@]}" -incremental -enable-batch-mode -j "$(sysctl -n hw.logicalcpu)" \
-    -output-file-map "$APP_OUTPUT_FILE_MAP" \
+    -module-name "$EXECUTABLE" -output-file-map "$APP_OUTPUT_FILE_MAP" \
     -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${VM_STATISTICS_COMPAT_FLAGS[@]}" "${HID_EVENT_SYSTEM_FLAGS[@]}" \
     "${BUILD_VARIANT_FLAGS[@]}" \
-    "${APP_SOURCES[@]}" -o "build/$EXECUTABLE"
+    "${APP_SOURCES[@]}" -o "build/$EXECUTABLE-$arch"
+APP_SLICES+=("build/$EXECUTABLE-$arch")
 
-echo "▸ Compiling protected fan helper…"
 swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIANT_FLAGS[@]}" \
     Sources/Vorssaint/Services/FanControl/FanControlSupport.swift \
     Sources/Vorssaint/Services/FanControl/FanControlXPC.swift \
@@ -599,10 +614,9 @@ swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" "${BUILD_VARIAN
     Sources/Vorssaint/Services/Metrics/TemperatureSensorSelector.swift \
     Sources/Vorssaint/Services/FanControl/FanControlHardware.swift \
     Sources/FanControlHelper/main.swift \
-    -o "build/$FAN_HELPER_ID"
-"build/$FAN_HELPER_ID" --selftest
+    -o "build/$FAN_HELPER_ID-$arch"
+HELPER_SLICES+=("build/$FAN_HELPER_ID-$arch")
 
-echo "▸ Compiling Now Playing adapter…"
 swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" -emit-library \
     -module-name VorssaintNowPlaying \
     Sources/NowPlayingAdapter/NowPlayingAdapter.swift \
@@ -610,7 +624,16 @@ swiftc -O -target "$TARGET" -sdk "$SDK" "${SDK_COMPAT_FLAGS[@]}" -emit-library \
     Sources/NowPlayingAdapter/NowPlayingSelection.swift \
     Sources/Vorssaint/Services/Notch/NotchPlaybackSource.swift \
     Sources/Vorssaint/Services/Notch/NotchPlaybackCommand.swift \
-    -o "build/$NOW_PLAYING_ADAPTER"
+    -o "build/$NOW_PLAYING_ADAPTER-$arch"
+ADAPTER_SLICES+=("build/$NOW_PLAYING_ADAPTER-$arch")
+done
+
+# One binary per piece, holding every processor it was built for.
+lipo -create "${APP_SLICES[@]}" -output "build/$EXECUTABLE"
+lipo -create "${HELPER_SLICES[@]}" -output "build/$FAN_HELPER_ID"
+lipo -create "${ADAPTER_SLICES[@]}" -output "build/$NOW_PLAYING_ADAPTER"
+rm -f "${APP_SLICES[@]}" "${HELPER_SLICES[@]}" "${ADAPTER_SLICES[@]}"
+"build/$FAN_HELPER_ID" --selftest
 
 echo "▸ Generating app icon…"
 swift Tools/MakeIcon.swift build/AppIcon.iconset
@@ -631,7 +654,7 @@ else
             --app-icon AppIcon \
             --platform macosx \
             --target-device mac \
-            --minimum-deployment-target 14.0 \
+            --minimum-deployment-target "$MIN_MACOS" \
             --enable-on-demand-resources NO \
             --output-partial-info-plist "$ICON_TMP/partial-info.plist" \
             >"$ICON_TMP/actool.log" 2>&1 && [[ -s "$ICON_TMP/catalog/Assets.car" ]]; then

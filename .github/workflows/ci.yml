@@ -1,9 +1,9 @@
 name: CI
 
+# Run by hand from the Actions tab: macOS runners are costly on a personal
+# account, so nothing starts on its own.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read

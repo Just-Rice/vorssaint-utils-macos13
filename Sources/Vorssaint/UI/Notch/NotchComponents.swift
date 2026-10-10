@@ -113,7 +113,7 @@ struct NotchStripHold<Value: Equatable, Content: View>: View {
 
     var body: some View {
         content(shows ? value : held)
-            .onChange(of: value) { _, value in
+            .onChangeCompat(of: value) { _, value in
                 if shows { held = value }
             }
     }
@@ -153,7 +153,7 @@ struct NotchIconButton: View {
             Image(systemName: symbol)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(selected ? .white : .white.opacity(0.55))
-                .contentTransition(.symbolEffect(.replace))
+                .symbolReplaceTransitionCompat()
                 .animation(reduceMotion ? nil : .smooth(duration: 0.24), value: symbol)
                 .frame(width: 28, height: 28)
                 .background(.white.opacity(selected ? 0.12 : 0),
@@ -314,7 +314,7 @@ struct NotchRail<Item: Identifiable, Content: View>: View {
                 .onAppear {
                     if let targetColumn { proxy.scrollTo(targetColumn, anchor: .center) }
                 }
-                .onChange(of: targetColumn) { _, target in
+                .onChangeCompat(of: targetColumn) { _, target in
                     guard let target else { return }
                     withAnimation(reduceMotion ? nil : .easeOut(duration: 0.16)) {
                         proxy.scrollTo(target, anchor: .center)

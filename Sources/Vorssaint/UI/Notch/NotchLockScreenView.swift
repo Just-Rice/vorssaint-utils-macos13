@@ -57,8 +57,8 @@ struct NotchLockScreenIsland: View {
                     Image(systemName: model.padlockOpen ? "lock.open.fill" : "lock.fill")
                         .font(.system(size: min(13, size.height * 0.42), weight: .semibold))
                         .foregroundStyle(.white)
-                        .contentTransition(.symbolEffect(.replace))
-                        .symbolEffect(.bounce, options: .speed(1.4), value: reduceMotion ? false : model.padlockOpen)
+                        .symbolReplaceTransitionCompat()
+                        .symbolBounceCompat(value: reduceMotion ? false : model.padlockOpen, speed: 1.4)
                         .animation(reduceMotion ? nil : .smooth(duration: 0.25), value: model.padlockOpen)
                         .frame(width: padlockSide, height: padlockSide)
                         .padding(.leading, max(0, min(geometry.compactMusicArtworkInset, wing - padlockSide)))
@@ -178,10 +178,10 @@ struct NotchLockScreenPlayer: View {
         .animation(reduceMotion ? nil : .smooth(duration: 0.5), value: shown)
         // A second tap before the player answers asks for the state after it,
         // so only the player reaching what was asked ends the early word.
-        .onChange(of: music.playback?.isPlaying) {
+        .onChangeCompat(of: music.playback?.isPlaying) {
             if music.playback?.isPlaying == requestedPlaying { requestedPlaying = nil }
         }
-        .onChange(of: music.playback?.track) { requestedPlaying = nil }
+        .onChangeCompat(of: music.playback?.track) { requestedPlaying = nil }
         // A player that never answers leaves the button as it was.
         .task(id: requestedPlaying) {
             guard requestedPlaying != nil else { return }
@@ -269,7 +269,7 @@ struct NotchLockScreenPlayer: View {
             Image(systemName: symbol)
                 .font(.system(size: size, weight: .semibold))
                 .foregroundStyle(.white)
-                .contentTransition(.symbolEffect(.replace))
+                .symbolReplaceTransitionCompat()
                 .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: symbol)
                 .frame(width: 48, height: 44)
                 .contentShape(RoundedRectangle(cornerRadius: 14))

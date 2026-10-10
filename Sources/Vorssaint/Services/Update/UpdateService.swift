@@ -27,7 +27,10 @@ final class UpdateService: ObservableObject {
     /// preview. Set alongside `.available`; cleared otherwise.
     @Published private(set) var availableNotes: String?
 
-    private let repository = "vorssaint/vorssaint-utils"
+    /// This fork's own releases. The original project's builds need macOS 14,
+    /// so following them would replace this app with one that cannot open on
+    /// macOS 13.
+    private let repository = "Just-Rice/vorssaint-utils-macos13"
     private var downloadURL: URL?
     /// Size the release advertises for the asset, used to bound the download.
     private var downloadExpectedBytes: Int64?
@@ -127,10 +130,17 @@ final class UpdateService: ObservableObject {
         request.setValue("Vorssaint/\(AppInfo.version)", forHTTPHeaderField: "User-Agent")
         request.cachePolicy = .reloadIgnoringLocalCacheData
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
             guard let self else { return }
             DispatchQueue.main.async {
                 self.lastChecked = Date()
+                // A repository that has published no release answers 404:
+                // nothing newer exists, which is not a failure.
+                if (response as? HTTPURLResponse)?.statusCode == 404 {
+                    self.availableNotes = nil
+                    self.state = .upToDate
+                    return
+                }
                 guard let data, error == nil else {
                     self.availableNotes = nil
                     self.state = .failed(error?.localizedDescription ?? "-")

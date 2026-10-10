@@ -222,7 +222,7 @@ struct NotchLayoutEditor: View {
             VStack(alignment: .leading, spacing: 14) {
                 Text(editor.editButton).font(.headline)
                 TextField(editor.buttonName, text: $editingName, prompt: Text(button.action?.title(l10n) ?? ""))
-                    .onChange(of: editingName) { _, value in
+                    .onChangeCompat(of: editingName) { _, value in
                         if let index = configuration.buttons.firstIndex(where: { $0.id == button.id }) { configuration.buttons[index].label = value }
                     }
                 Picker(editor.position, selection: Binding(get: {

@@ -117,13 +117,13 @@ enum MenuPanelRecoveryTests {
         var isTerminated = false
         var activations = 0
         init(pid: pid_t) { processIdentifier = pid }
-        func activate(from: NSRunningApplication, options: [Int]) -> Bool {
+        func activateCompat(from: NSRunningApplication, options: [Int]) -> Bool {
             activations += 1
             NSWorkspace.shared.frontmostApplication = self
             return true
         }
         @discardableResult
-        func activate(options: [Int]) -> Bool { activate(from: .current, options: options) }
+        func activate(options: [Int]) -> Bool { activateCompat(from: .current, options: options) }
     }
     final class NSWorkspace {
         static var shared = NSWorkspace()

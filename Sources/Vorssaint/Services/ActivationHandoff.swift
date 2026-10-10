@@ -24,8 +24,22 @@ enum ActivationHandoff {
     }
 
     static func yield(to app: NSRunningApplication) {
+        // macOS 13 has no cooperative activation: any app may bring another
+        // forward, so there is nothing to hand over.
+        guard #available(macOS 14.0, *) else { return }
         lastSelfActivation = CFAbsoluteTimeGetCurrent()
         NSApp.activate(ignoringOtherApps: true)
         NSApp.yieldActivation(to: app)
+    }
+}
+
+extension NSRunningApplication {
+    /// `activate(from:options:)`, or the forced activation macOS 13 relies on.
+    func activateCompat(from source: NSRunningApplication,
+                        options: NSApplication.ActivationOptions) -> Bool {
+        if #available(macOS 14.0, *) {
+            return activate(from: source, options: options)
+        }
+        return activate(options: options.union(.activateIgnoringOtherApps))
     }
 }

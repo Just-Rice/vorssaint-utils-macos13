@@ -44,7 +44,8 @@ final class NotchQuickAccessMotion: ObservableObject {
         let animation: Animation? = animated
             ? (visible ? .spring(duration: 0.38, bounce: 0.12).delay(delay) : .easeIn(duration: NotchQuickAccessLayout.withdrawalDuration))
             : nil
-        withAnimation(animation, completionCriteria: .logicallyComplete) {
+        let duration = visible ? 0.38 + delay : NotchQuickAccessLayout.withdrawalDuration
+        withAnimationCompat(animation, duration: duration) {
             progress = visible ? 1 : 0
         } completion: { [weak self] in
             guard let self, self.generation == token else { return }

@@ -2541,9 +2541,9 @@ enum NotchTests {
                    "\(language) ships its own readable calendar permission explanation")
         }
         suite.expect(NotchCalendarSupport.requestFailed(status: .notDetermined, hasError: false)
-               && NotchCalendarSupport.requestFailed(status: .writeOnly, hasError: false),
+               && NotchCalendarSupport.requestFailed(status: .writeOnlyCompat ?? .notDetermined, hasError: false),
                "a calendar request that silently fails to resolve read access surfaces an error")
-        suite.expect(!NotchCalendarSupport.requestFailed(status: .fullAccess, hasError: false)
+        suite.expect(!NotchCalendarSupport.requestFailed(status: .fullAccessCompat, hasError: false)
                && !NotchCalendarSupport.requestFailed(status: .denied, hasError: false)
                && !NotchCalendarSupport.requestFailed(status: .restricted, hasError: false),
                "successful grants and explicit system refusals keep their own calendar presentation")

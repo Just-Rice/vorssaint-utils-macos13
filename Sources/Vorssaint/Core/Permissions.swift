@@ -350,7 +350,7 @@ final class Permissions: ObservableObject {
         requestingCalendar = true
         calendarRequestFailed = false
         let store = EKEventStore()
-        store.requestFullAccessToEvents { [weak self, store] _, error in
+        let completion: (Bool, Error?) -> Void = { [weak self, store] _, error in
             _ = store
             DispatchQueue.main.async {
                 self?.calendarPermissionResolution = ProcessInfo.processInfo.systemUptime
@@ -359,6 +359,11 @@ final class Permissions: ObservableObject {
                 self?.calendarRequestFailed = NotchCalendarSupport.requestFailed(status: status, hasError: error != nil)
                 self?.calendarAccess = status
             }
+        }
+        if #available(macOS 14.0, *) {
+            store.requestFullAccessToEvents(completion: completion)
+        } else {
+            store.requestAccess(to: .event, completion: completion)
         }
     }
 

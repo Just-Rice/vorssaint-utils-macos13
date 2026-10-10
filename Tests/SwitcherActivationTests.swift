@@ -24,7 +24,7 @@ enum SwitcherActivationTests {
             self.processIdentifier = processIdentifier
         }
         func unhide() { events.append("unhide") }
-        @discardableResult func activate(from: App, options: NSApplication.ActivationOptions) -> Bool {
+        @discardableResult func activateCompat(from: App, options: NSApplication.ActivationOptions) -> Bool {
             events.append("activate:\(processIdentifier):\(options.contains(.activateAllWindows))")
             return true
         }

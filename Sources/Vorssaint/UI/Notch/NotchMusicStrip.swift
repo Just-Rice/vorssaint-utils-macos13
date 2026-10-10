@@ -195,7 +195,7 @@ struct NotchMusicStripButton: View {
         Image(systemName: symbol)
             .font(.system(size: size, weight: .semibold))
             .foregroundStyle(tint)
-            .contentTransition(.symbolEffect(.replace))
+            .symbolReplaceTransitionCompat()
             .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: playing)
             // The ink, not the frame, sits on the bars' middle.
             .alignmentGuide(VerticalAlignment.center) {
@@ -217,12 +217,7 @@ struct NotchMusicSwipeFeedback: ViewModifier {
     func body(content: Content) -> some View {
         let displacement = reduceMotion ? 0 : direction
         return content
-            .keyframeAnimator(initialValue: CGFloat.zero, trigger: trigger) { view, travel in
-                view.offset(x: displacement * travel)
-            } keyframes: { _ in
-                CubicKeyframe(8, duration: 0.09)
-                SpringKeyframe(0, duration: 0.25, spring: .smooth)
-            }
+            .nudgeCompat(displacement: displacement, trigger: trigger)
             .onReceive(NotchMusicService.shared.gestureSkips) { forward in
                 guard enabled, !reduceMotion else { return }
                 direction = forward ? -1 : 1

@@ -27,7 +27,7 @@ struct NotchSectionsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onChange(of: sections) { _, visible in
+        .onChangeCompat(of: sections) { _, visible in
             if !visible.contains(where: { $0 == service.highlightedSection }) {
                 service.highlightedSection = visible.first
             }
